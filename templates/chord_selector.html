@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>コードセット保存ツール</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      font-size: 14px;
+    }
+
+    h3 {
+      margin-top: 20px;
+    }
+
+    button {
+      height: 32px;
+      padding: 0 15px;
+      font-size: 14px;
+      border: none;
+      background-color: #eee;
+      cursor: pointer;
+      border-radius: 5px;
+      box-sizing: border-box;
+      white-space: nowrap;
+      transition: background-color 0.1s ease, color 0.1s ease;
+    }
+
+    button.selected {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .button-group {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: min-content;
+      overflow-x: auto;
+      gap: 10px;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      scrollbar-width: thin;
+    }
+
+    .button-group::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .inline-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0 20px;
+      flex-wrap: wrap;
+    }
+
+    #output {
+      font-family: monospace;
+      font-size: 16px;
+      background: #f0f0f0;
+      padding: 12px;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      margin-bottom: 10px;
+      overflow-x: auto;
+    }
+
+    .set-display {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      overflow-x: auto;
+    }
+
+    .save-reset-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .save-reset-group button {
+      flex: 1;
+    }
+
+    .save-button:active {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .reset-button:active {
+      background-color: #f44336;
+      color: white;
+    }
+
+    .set-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .set-buttons button {
+      flex: 1;
+      min-width: 10px;
+    }
+
+
+    @media (max-width: 600px) {
+      .inline-group {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .set-buttons {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>make chords!</h1>
+
+  <h3>ルート音</h3>
+  <div class="button-group" id="root-buttons"></div>
+
+  <h3>コードタイプ</h3>
+  <div class="button-group" id="type-buttons"></div>
+
+  <div id="output">選択中のコード: なし</div>
+
+  <div class="save-reset-group">
+    <button class="save-button" onclick="addToCurrentSet()">セット</button>
+    <button class="reset-button" onclick="resetCurrentSet()">リセット</button>
+  </div>
+
+  <div class="set-buttons">
+    <button onclick="nextSet()">次</button>
+    <button onclick="repeatLastSet(2)">×2</button>
+    <button onclick="repeatLastSet(4)">×4</button>
+    <button onclick="repeatLastSet(8)">×8</button>
+  </div>
+
+  <h3>保存されたセット</h3>
+  <div id="sets-display" class="set-display"></div>
+
+  <button onclick="exportToFile()">エクスポート</button>
+
+  <script>
+    const roots = ["C","C#/D♭","D","D#/E♭","E","F","F#/G♭","G","G#/A♭","A","A#/B♭","B"];
+    const types = ["M","m","7","maj7","m7","mM7","dim","aug","sus4","m7-5","add9","7sus4","aug7","7-5","7+5","6","m6","7(#9)","7-9","9","m9","maj9"];
+
+    let selectedRoot = null;
+    let selectedType = null;
+    let allSets = [[]];
+    let currentSetIndex = 0;
+
+    function updateOutput() {
+      const output = document.getElementById('output');
+      const currentSet = allSets[currentSetIndex];
+      const chord = selectedRoot && selectedType ? selectedRoot + selectedType : "なし";
+
+      output.textContent = `選択中のコード：${chord}
+セット${currentSetIndex + 1}：${currentSet.join(" ")}`.trim();
+    }
+
+    function normalizeRoot(root) {
+      return root.split("/")[0];
+    }
+
+    function createButtons(list, containerId, isRoot) {
+      const container = document.getElementById(containerId);
+      list.forEach(item => {
+        const btn = document.createElement('button');
+        btn.textContent = item;
+        btn.addEventListener('click', () => {
+          container.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          if (isRoot) {
+            selectedRoot = normalizeRoot(item);
+          } else {
+            selectedType = item;
+          }
+          updateOutput();
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function addToCurrentSet() {
+      if (!selectedRoot || !selectedType) {
+        alert("ルート音とコードタイプを選んでください。");
+        return;
+      }
+      const chord = selectedRoot + selectedType;
+      allSets[currentSetIndex].push(chord);
+      updateOutput();
+      renderSets();
+    }
+
+    function nextSet() {
+      allSets.push([]);
+      currentSetIndex = allSets.length - 1;
+      updateOutput();
+      renderSets();
+    }
+
+    function repeatLastSet(times) {
+      const lastSet = allSets[allSets.length - 1];
+      if (!lastSet.length) {
+        alert("繰り返すセットがありません。");
+        return;
+      }
+      allSets.splice(allSets.length - 1, 1);
+      for (let i = 0; i < times; i++) {
+        allSets.push([...lastSet]);
+      }
+      allSets.push([]);
+      currentSetIndex = allSets.length - 1;
+      updateOutput();
+      renderSets();
+    }
+
+    function renderSets() {
+      const display = document.getElementById('sets-display');
+      display.innerHTML = "";
+      allSets.forEach((set, index) => {
+        const div = document.createElement("div");
+        div.textContent = `セット${index + 1}: ${set.join(" ")}`;
+        display.appendChild(div);
+      });
+    }
+
+    function exportToFile() {
+      if (allSets.length === 0) {
+        alert("保存されたセットがありません。");
+        return;
+      }
+
+      const title = prompt("タイトル");
+      if (!title) return;
+
+      const lines = allSets.map((set, i) => `セット${i + 1}: ${set.join(" ")}`);
+      const text = lines.join("\n");
+
+      fetch('/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ chord_data: text })
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.blob();
+        } else {
+          throw new Error("送信に失敗しました");
+        }
+      })
+      .then(blob => {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${title}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      })
+      .catch(err => alert("エラー: " + err.message));
+    }
+
+    function resetCurrentSet() {
+      if (confirm("現在のセットをリセットしますか？")) {
+        allSets[currentSetIndex] = [];
+        updateOutput();
+        renderSets();
+      }
+    }
+
+    createButtons(roots, 'root-buttons', true);
+    createButtons(types, 'type-buttons', false);
+    updateOutput();
+  </script>
+</body>
+</html>
