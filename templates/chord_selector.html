@@ -1,157 +1,96 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>コードセット保存ツール</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chord​-Set Maker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      font-size: 14px;
+    /* Step-2 の横スクロールバーをカスタム */
+    #type-buttons::-webkit-scrollbar {
+      height: 6px;                 /* 横スクロールなので height */
+    }
+    #type-buttons::-webkit-scrollbar-track {
+      background: transparent;     /* トラックは透明のまま */
+    }
+    #type-buttons::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.25);/* 薄いグレー（25 % 黒） */
+      border-radius: 10px;
+    }
+    #type-buttons:hover::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.35);/* ホバー時に少し濃く */
     }
 
-    h3 {
-      margin-top: 20px;
-    }
-
-    button {
-      height: 32px;
-      padding: 0 15px;
-      font-size: 14px;
-      border: none;
-      background-color: #eee;
-      cursor: pointer;
-      border-radius: 5px;
-      box-sizing: border-box;
-      white-space: nowrap;
-      transition: background-color 0.1s ease, color 0.1s ease;
-    }
-
-    button.selected {
-      background-color: #4CAF50;
-      color: white;
-    }
-
-    .button-group {
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: min-content;
-      overflow-x: auto;
-      gap: 10px;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
+    /* Firefox 用（任意）*/
+    #type-buttons {
+      scrollbar-color: rgba(0,0,0,0.25) transparent;
       scrollbar-width: thin;
-    }
-
-    .button-group::-webkit-scrollbar {
-      height: 6px;
-    }
-
-    .inline-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 10px 0 20px;
-      flex-wrap: wrap;
-    }
-
-    #output {
-      font-family: monospace;
-      font-size: 16px;
-      background: #f0f0f0;
-      padding: 12px;
-      border-radius: 5px;
-      white-space: pre-wrap;
-      margin-bottom: 10px;
-      overflow-x: auto;
-    }
-
-    .set-display {
-      background: #f4f4f4;
-      padding: 10px;
-      border-radius: 5px;
-      margin: 10px 0;
-      overflow-x: auto;
-    }
-
-    .save-reset-group {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-
-    .save-reset-group button {
-      flex: 1;
-    }
-
-    .save-button:active {
-      background-color: #4CAF50;
-      color: white;
-    }
-
-    .reset-button:active {
-      background-color: #f44336;
-      color: white;
-    }
-
-    .set-buttons {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-
-    .set-buttons button {
-      flex: 1;
-      min-width: 10px;
-    }
-
-
-    @media (max-width: 600px) {
-      .inline-group {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      button {
-        width: 100%;
-      }
-
-      .set-buttons {
-        grid-template-columns: repeat(2, 1fr);
-      }
     }
   </style>
 </head>
-<body>
-  <h1>make chords!</h1>
+<body class="bg-gray-100 text-gray-800 font-sans p-4">
+  <div class="max-w-4xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+    <h1 class="text-2xl font-bold mb-6 text-center">🎵 Chord-Set Maker</h1>
 
-  <h3>ルート音</h3>
-  <div class="button-group" id="root-buttons"></div>
+    <!-- Step 1 -->
+    <section class="mb-6">
+      <h2 class="text-lg font-semibold mb-2">1. Choose Root Note</h2>
+      <div class="flex overflow-x-auto gap-2 pb-1" id="root-buttons"></div>
+    </section>
 
-  <h3>コードタイプ</h3>
-  <div class="button-group" id="type-buttons"></div>
+    <!-- Step 2 -->
+    <section class="mb-6">
+      <h2 class="text-lg font-semibold mb-2">2. Choose Chord Type</h2>
+      <div class="flex overflow-x-auto gap-2 pb-1" id="type-buttons"></div>
+    </section>
 
-  <div id="output">選択中のコード: なし</div>
+    <!-- Step 3 -->
+    <section class="mb-6">
+      <h2 class="text-lg font-semibold mb-2">3. Add to Current Set</h2>
+      <div class="flex flex-wrap gap-3 items-end mb-3">
+        <button onclick="addToCurrentSet()" class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700">Add Chord</button>
+        <div class="flex flex-col">
+          <label class="text-sm mb-1">Repeat</label>
+          <select id="repeat-count" class="border rounded px-3 py-1 w-20">
+            <option value="1" selected>×1</option>
+            <option value="2">×2</option>
+            <option value="3">×3</option>
+            <option value="4">×4</option>
+            <option value="8">×8</option>
+          </select>
+        </div>
+        <div class="flex flex-col">
+          <label for="setName" class="text-sm mb-1">Set Name</label>
+          <input id="setName" type="text" placeholder="e.g. Intro" class="border rounded px-3 py-1 w-48"/>
+        </div>
+        <button onclick="saveCurrentSet()" class="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700">Save Set</button>
+      </div>
 
-  <div class="save-reset-group">
-    <button class="save-button" onclick="addToCurrentSet()">セット</button>
-    <button class="reset-button" onclick="resetCurrentSet()">リセット</button>
+      <!-- Updated chord display -->
+      <div class="bg-gray-50 p-4 rounded-md text-sm space-y-2 border border-gray-200 shadow-sm">
+        <div>
+          <span class="font-semibold text-gray-600">Selected Chord:</span>
+          <span id="selected-chord" class="ml-2 text-blue-700 font-mono">None</span>
+        </div>
+        <div>
+          <span class="font-semibold text-gray-600">Current Set:</span>
+          <span id="current-set" class="ml-2 text-gray-800 font-mono">Empty</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 4 -->
+    <section class="mb-6">
+      <h2 class="text-lg font-semibold mb-2">4. Saved Sets</h2>
+      <div id="sets-display" class="grid gap-4 md:grid-cols-2"></div>
+    </section>
+
+    <!-- Step 5 -->
+    <section>
+      <h2 class="text-lg font-semibold mb-2">5. Download MIDI ZIP</h2>
+      <button onclick="exportToFile()" class="w-full bg-indigo-600 text-white py-3 rounded-xl hover:bg-indigo-700 transition">Download MIDI ZIP</button>
+    </section>
   </div>
-
-  <div class="set-buttons">
-    <button onclick="nextSet()">次</button>
-    <button onclick="repeatLastSet(2)">×2</button>
-    <button onclick="repeatLastSet(4)">×4</button>
-    <button onclick="repeatLastSet(8)">×8</button>
-  </div>
-
-  <h3>保存されたセット</h3>
-  <div id="sets-display" class="set-display"></div>
-
-  <button onclick="exportToFile()">エクスポート</button>
 
   <script>
     const roots = ["C","C#/D♭","D","D#/E♭","E","F","F#/G♭","G","G#/A♭","A","A#/B♭","B"];
@@ -159,132 +98,163 @@
 
     let selectedRoot = null;
     let selectedType = null;
-    let allSets = [[]];
-    let currentSetIndex = 0;
-
-    function updateOutput() {
-      const output = document.getElementById('output');
-      const currentSet = allSets[currentSetIndex];
-      const chord = selectedRoot && selectedType ? selectedRoot + selectedType : "なし";
-
-      output.textContent = `選択中のコード：${chord}
-セット${currentSetIndex + 1}：${currentSet.join(" ")}`.trim();
-    }
+    let sets = [];
+    let currentChords = [];
 
     function normalizeRoot(root) {
       return root.split("/")[0];
     }
 
-    function createButtons(list, containerId, isRoot) {
-      const container = document.getElementById(containerId);
-      list.forEach(item => {
-        const btn = document.createElement('button');
-        btn.textContent = item;
-        btn.addEventListener('click', () => {
-          container.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
-          btn.classList.add('selected');
-          if (isRoot) {
-            selectedRoot = normalizeRoot(item);
-          } else {
-            selectedType = item;
-          }
-          updateOutput();
-        });
-        container.appendChild(btn);
+    function updateOutput() {
+      const chord = selectedRoot && selectedType ? selectedRoot + selectedType : "None";
+      document.getElementById("selected-chord").textContent = chord;
+      document.getElementById("current-set").textContent = currentChords.length > 0 ? currentChords.join(" ") : "Empty";
+    }
+
+    function makeButton(label, isRoot) {
+      const btn = document.createElement("button");
+      btn.textContent = label;
+      btn.className = "bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded whitespace-nowrap";
+      btn.addEventListener("click", () => {
+        btn.parentElement.querySelectorAll("button").forEach(b => b.classList.remove("bg-blue-500", "text-white"));
+        btn.classList.add("bg-blue-500", "text-white");
+        if (isRoot) {
+          selectedRoot = normalizeRoot(label);
+        } else {
+          selectedType = label;
+        }
+        updateOutput();
       });
+      return btn;
     }
 
     function addToCurrentSet() {
       if (!selectedRoot || !selectedType) {
-        alert("ルート音とコードタイプを選んでください。");
+        alert("Please select both root and chord type.");
         return;
       }
       const chord = selectedRoot + selectedType;
-      allSets[currentSetIndex].push(chord);
+      const repeat = parseInt(document.getElementById("repeat-count").value, 10);
+      for (let i = 0; i < repeat; i++) {
+        currentChords.push(chord);
+      }
       updateOutput();
-      renderSets();
     }
 
-    function nextSet() {
-      allSets.push([]);
-      currentSetIndex = allSets.length - 1;
-      updateOutput();
-      renderSets();
-    }
-
-    function repeatLastSet(times) {
-      const lastSet = allSets[allSets.length - 1];
-      if (!lastSet.length) {
-        alert("繰り返すセットがありません。");
+    function saveCurrentSet() {
+      if (currentChords.length === 0) {
+        alert("Current set is empty.");
         return;
       }
-      allSets.splice(allSets.length - 1, 1);
-      for (let i = 0; i < times; i++) {
-        allSets.push([...lastSet]);
+      const nameInput = document.getElementById("setName");
+      const name = nameInput.value.trim() || `Set ${sets.length + 1}`;
+      const existing = sets.find(s => s.name === name);
+      if (existing) {
+        existing.chords = [...currentChords];
+      } else {
+        sets.push({ name, chords: [...currentChords] });
       }
-      allSets.push([]);
-      currentSetIndex = allSets.length - 1;
+      currentChords = [];
+      nameInput.value = "";
+      document.querySelectorAll('#root-buttons button, #type-buttons button').forEach(b => b.classList.remove("bg-blue-500", "text-white"));
+      selectedRoot = null;
+      selectedType = null;
       updateOutput();
+      renderSets();
+    }
+
+    function copySet(index) {
+      const original = sets[index];
+      let baseName = original.name.replace(/ \(copy.*\)/, '');
+      let copyName = `${baseName} (copy)`;
+      let suffix = 1;
+      while (sets.find(s => s.name === copyName)) {
+        suffix++;
+        copyName = `${baseName} (copy ${suffix})`;
+      }
+      sets.push({ name: copyName, chords: [...original.chords] });
+      renderSets();
+    }
+
+    function deleteSet(index) {
+      sets.splice(index, 1);
       renderSets();
     }
 
     function renderSets() {
-      const display = document.getElementById('sets-display');
-      display.innerHTML = "";
-      allSets.forEach((set, index) => {
-        const div = document.createElement("div");
-        div.textContent = `セット${index + 1}: ${set.join(" ")}`;
-        display.appendChild(div);
+      const container = document.getElementById("sets-display");
+      container.innerHTML = "";
+
+      sets.forEach((set, idx) => {
+        const card = document.createElement("div");
+        card.className = "bg-gray-50 border rounded-xl p-4 shadow-sm";
+        card.setAttribute("draggable", "true");
+        card.dataset.index = idx;
+
+        card.innerHTML = `
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="font-semibold text-sm truncate">${set.name}</h3>
+            <div class="text-xs space-x-2">
+              <button onclick="copySet(${idx})" class="text-blue-500 hover:underline">Copy</button>
+              <button onclick="deleteSet(${idx})" class="text-red-500 hover:underline">Delete</button>
+            </div>
+          </div>
+          <p class="text-sm break-words">${set.chords.join(" ")}</p>
+        `;
+
+        // --- ドラッグ関連イベント ---
+        card.addEventListener("dragstart", (e) => {
+          e.dataTransfer.setData("text/plain", idx);
+          e.currentTarget.style.opacity = "0.5";
+        });
+
+        card.addEventListener("dragend", (e) => {
+          e.currentTarget.style.opacity = "1";
+        });
+
+        card.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+        });
+
+        card.addEventListener("drop", (e) => {
+          e.preventDefault();
+          const fromIdx = parseInt(e.dataTransfer.getData("text/plain"));
+          const toIdx = parseInt(e.currentTarget.dataset.index);
+          if (fromIdx !== toIdx) {
+            const moved = sets.splice(fromIdx, 1)[0];
+            sets.splice(toIdx, 0, moved);
+            renderSets();
+          }
+        });
+
+        container.appendChild(card);
       });
     }
-
+    
     function exportToFile() {
-      if (allSets.length === 0) {
-        alert("保存されたセットがありません。");
+      if (sets.length === 0) {
+        alert("Nothing to export.");
         return;
       }
-
-      const title = prompt("タイトル");
-      if (!title) return;
-
-      const lines = allSets.map((set, i) => `セット${i + 1}: ${set.join(" ")}`);
-      const text = lines.join("\n");
-
-      fetch('/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ chord_data: text })
+      const lines = sets.map(s => `${s.name}: ${s.chords.join(" ")}`);
+      fetch("/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chord_data: lines.join("\n") })
       })
-      .then(response => {
-        if (response.ok) {
-          return response.blob();
-        } else {
-          throw new Error("送信に失敗しました");
-        }
-      })
+      .then(r => r.ok ? r.blob() : Promise.reject("Server error"))
       .then(blob => {
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `${title}.zip`;
-        document.body.appendChild(link);
+        link.download = "chords_output.zip";
         link.click();
-        document.body.removeChild(link);
       })
-      .catch(err => alert("エラー: " + err.message));
+      .catch(e => alert(e));
     }
 
-    function resetCurrentSet() {
-      if (confirm("現在のセットをリセットしますか？")) {
-        allSets[currentSetIndex] = [];
-        updateOutput();
-        renderSets();
-      }
-    }
-
-    createButtons(roots, 'root-buttons', true);
-    createButtons(types, 'type-buttons', false);
+    roots.forEach(r => document.getElementById("root-buttons").appendChild(makeButton(r, true)));
+    types.forEach(t => document.getElementById("type-buttons").appendChild(makeButton(t, false)));
     updateOutput();
   </script>
 </body>
