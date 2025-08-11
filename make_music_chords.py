@@ -49,12 +49,12 @@ def generate_music(filename, input_folder, output_folder):
                 sorted_keys = sorted(key_sharp, key=lambda x: -len(x))
                 key = next((k for k in sorted_keys if chord.startswith(k)), None)
                 if not key:
-                    print(f"警告: {chord} に対応するキーが見つかりません。スキップします。")
+                    print(f"Warning: No matching key found for {chord}. Skipping.")
                     continue
 
                 chord_path = os.path.join(input_folder, key, f"{chord}.mid")
                 if not os.path.exists(chord_path):
-                    print(f"警告: ファイルが見つかりません: {chord_path}")
+                    print(f"Warning: File not found: {chord_path}")
                     continue
 
                 try:
@@ -72,7 +72,7 @@ def generate_music(filename, input_folder, output_folder):
                                 notes_off.append((abs_time, msg.note))
 
                     active_notes = set(note for _, note, _ in notes_on)
-                    print(f"処理中のコード: {chord} - アクティブなノート: {active_notes}")
+                    print(f"chord: {chord} - active_notes: {active_notes}")
 
                     for i, note in enumerate(sorted(active_notes)):
                         merged_track.append(Message('note_on', note=note, velocity=64, time=0 if i == 0 else 0))
@@ -81,12 +81,12 @@ def generate_music(filename, input_folder, output_folder):
                         merged_track.append(Message('note_off', note=note, velocity=64, time=0))
 
                 except Exception as e:
-                    print(f"エラー: {chord_path} の読み込み中に問題が発生しました: {e}")
+                    print(f"Error: An issue occurred while loading {chord_path}: {e}")
 
             if len(merged_track) > 1:
-                output_path = os.path.join(output_folder, f"セット{idx}.mid")
+                output_path = os.path.join(output_folder, f"set{idx}.mid")
                 merged_midi.save(output_path)
-                print(f"✅ セット{idx} を {output_path} に保存しました。")
+                print(f"✅ Saved set {idx} to {output_path}.")
 
     except FileNotFoundError:
-        print(f"{filename} が見つかりません。ファイルを保存しましたか？")
+        print(f"{filename} not found. Did you save the file?")

@@ -3,25 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chord​-Set Maker</title>
+  <title>Chord-Set Maker</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Step-2 の横スクロールバーをカスタム */
+    /* Custom horizontal scrollbar for Step 2 */
     #type-buttons::-webkit-scrollbar {
-      height: 6px;                 /* 横スクロールなので height */
+      height: 6px;
     }
     #type-buttons::-webkit-scrollbar-track {
-      background: transparent;     /* トラックは透明のまま */
+      background: transparent;
     }
     #type-buttons::-webkit-scrollbar-thumb {
-      background: rgba(0,0,0,0.25);/* 薄いグレー（25 % 黒） */
+      background: rgba(0,0,0,0.25);
       border-radius: 10px;
     }
     #type-buttons:hover::-webkit-scrollbar-thumb {
-      background: rgba(0,0,0,0.35);/* ホバー時に少し濃く */
+      background: rgba(0,0,0,0.35);
     }
-
-    /* Firefox 用（任意）*/
+    /* Firefox */
     #type-buttons {
       scrollbar-color: rgba(0,0,0,0.25) transparent;
       scrollbar-width: thin;
@@ -35,30 +34,29 @@
     <!-- Step 1 -->
     <section class="mb-6">
       <h2 class="text-lg font-semibold mb-2">1. Choose Root Note</h2>
-      <div class="flex overflow-x-auto gap-2 pb-1" id="root-buttons"></div>
+      <div id="root-buttons" class="flex overflow-x-auto gap-2 pb-1"></div>
     </section>
 
     <!-- Step 2 -->
     <section class="mb-6">
       <h2 class="text-lg font-semibold mb-2">2. Choose Chord Type</h2>
-      <div class="flex overflow-x-auto gap-2 pb-1" id="type-buttons"></div>
+      <div id="type-buttons" class="flex overflow-x-auto gap-2 pb-1"></div>
     </section>
 
     <!-- Step 3 -->
     <section class="mb-6">
       <h2 class="text-lg font-semibold mb-2">3. Add to Current Set</h2>
       <div class="flex flex-wrap gap-3 items-end mb-3">
-        <button onclick="addToCurrentSet()" class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700">Add Chord</button>
         <div class="flex flex-col">
           <label class="text-sm mb-1">Repeat</label>
           <select id="repeat-count" class="border rounded px-3 py-1 w-20">
             <option value="1" selected>×1</option>
             <option value="2">×2</option>
-            <option value="3">×3</option>
             <option value="4">×4</option>
             <option value="8">×8</option>
           </select>
         </div>
+        <button onclick="addToCurrentSet()" class="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700">Add Chord</button>
         <div class="flex flex-col">
           <label for="setName" class="text-sm mb-1">Set Name</label>
           <input id="setName" type="text" placeholder="e.g. Intro" class="border rounded px-3 py-1 w-48"/>
@@ -66,7 +64,6 @@
         <button onclick="saveCurrentSet()" class="bg-green-600 text-white px-4 py-2 rounded-xl hover:bg-green-700">Save Set</button>
       </div>
 
-      <!-- Updated chord display -->
       <div class="bg-gray-50 p-4 rounded-md text-sm space-y-2 border border-gray-200 shadow-sm">
         <div>
           <span class="font-semibold text-gray-600">Selected Chord:</span>
@@ -95,102 +92,69 @@
   <script>
     const roots = ["C","C#/D♭","D","D#/E♭","E","F","F#/G♭","G","G#/A♭","A","A#/B♭","B"];
     const types = ["M","m","7","maj7","m7","mM7","dim","aug","sus4","m7-5","add9","7sus4","aug7","7-5","7+5","6","m6","7(#9)","7-9","9","m9","maj9"];
+    let selectedRoot = null, selectedType = null, sets = [], currentChords = [];
 
-    let selectedRoot = null;
-    let selectedType = null;
-    let sets = [];
-    let currentChords = [];
+    const normalizeRoot = root => root.split("/")[0];
 
-    function normalizeRoot(root) {
-      return root.split("/")[0];
-    }
+    const updateOutput = () => {
+      document.getElementById("selected-chord").textContent = selectedRoot && selectedType ? selectedRoot + selectedType : "None";
+      document.getElementById("current-set").textContent = currentChords.length ? currentChords.join(" ") : "Empty";
+    };
 
-    function updateOutput() {
-      const chord = selectedRoot && selectedType ? selectedRoot + selectedType : "None";
-      document.getElementById("selected-chord").textContent = chord;
-      document.getElementById("current-set").textContent = currentChords.length > 0 ? currentChords.join(" ") : "Empty";
-    }
-
-    function makeButton(label, isRoot) {
+    const makeButton = (label, isRoot) => {
       const btn = document.createElement("button");
       btn.textContent = label;
       btn.className = "bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded whitespace-nowrap";
       btn.addEventListener("click", () => {
         btn.parentElement.querySelectorAll("button").forEach(b => b.classList.remove("bg-blue-500", "text-white"));
         btn.classList.add("bg-blue-500", "text-white");
-        if (isRoot) {
-          selectedRoot = normalizeRoot(label);
-        } else {
-          selectedType = label;
-        }
+        isRoot ? selectedRoot = normalizeRoot(label) : selectedType = label;
         updateOutput();
       });
       return btn;
-    }
+    };
 
-    function addToCurrentSet() {
-      if (!selectedRoot || !selectedType) {
-        alert("Please select both root and chord type.");
-        return;
-      }
+    const addToCurrentSet = () => {
+      if (!selectedRoot || !selectedType) return alert("Please select both root and chord type.");
       const chord = selectedRoot + selectedType;
       const repeat = parseInt(document.getElementById("repeat-count").value, 10);
-      for (let i = 0; i < repeat; i++) {
-        currentChords.push(chord);
-      }
+      currentChords.push(...Array(repeat).fill(chord));
       updateOutput();
-    }
+    };
 
-    function saveCurrentSet() {
-      if (currentChords.length === 0) {
-        alert("Current set is empty.");
-        return;
-      }
+    const saveCurrentSet = () => {
+      if (!currentChords.length) return alert("Current set is empty.");
       const nameInput = document.getElementById("setName");
       const name = nameInput.value.trim() || `Set ${sets.length + 1}`;
       const existing = sets.find(s => s.name === name);
-      if (existing) {
-        existing.chords = [...currentChords];
-      } else {
-        sets.push({ name, chords: [...currentChords] });
-      }
+      existing ? existing.chords = [...currentChords] : sets.push({ name, chords: [...currentChords] });
       currentChords = [];
       nameInput.value = "";
       document.querySelectorAll('#root-buttons button, #type-buttons button').forEach(b => b.classList.remove("bg-blue-500", "text-white"));
-      selectedRoot = null;
-      selectedType = null;
+      selectedRoot = selectedType = null;
       updateOutput();
       renderSets();
-    }
+    };
 
-    function copySet(index) {
+    const copySet = index => {
       const original = sets[index];
       let baseName = original.name.replace(/ \(copy.*\)/, '');
-      let copyName = `${baseName} (copy)`;
-      let suffix = 1;
-      while (sets.find(s => s.name === copyName)) {
-        suffix++;
-        copyName = `${baseName} (copy ${suffix})`;
-      }
+      let copyName = `${baseName} (copy)`, suffix = 1;
+      while (sets.find(s => s.name === copyName)) copyName = `${baseName} (copy ${++suffix})`;
       sets.push({ name: copyName, chords: [...original.chords] });
       renderSets();
-    }
+    };
 
-    function deleteSet(index) {
-      sets.splice(index, 1);
-      renderSets();
-    }
+    const deleteSet = index => { sets.splice(index, 1); renderSets(); };
 
-    function renderSets() {
+    const renderSets = () => {
       const container = document.getElementById("sets-display");
       container.innerHTML = "";
-
       sets.forEach((set, idx) => {
         const card = document.createElement("div");
         card.className = "bg-gray-50 border rounded-xl p-4 shadow-sm";
-        card.setAttribute("draggable", "true");
+        card.draggable = true;
         card.dataset.index = idx;
-
         card.innerHTML = `
           <div class="flex justify-between items-center mb-2">
             <h3 class="font-semibold text-sm truncate">${set.name}</h3>
@@ -201,42 +165,24 @@
           </div>
           <p class="text-sm break-words">${set.chords.join(" ")}</p>
         `;
-
-        // --- ドラッグ関連イベント ---
-        card.addEventListener("dragstart", (e) => {
-          e.dataTransfer.setData("text/plain", idx);
-          e.currentTarget.style.opacity = "0.5";
-        });
-
-        card.addEventListener("dragend", (e) => {
-          e.currentTarget.style.opacity = "1";
-        });
-
-        card.addEventListener("dragover", (e) => {
+        card.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", idx); e.currentTarget.style.opacity = "0.5"; });
+        card.addEventListener("dragend", e => { e.currentTarget.style.opacity = "1"; });
+        card.addEventListener("dragover", e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; });
+        card.addEventListener("drop", e => {
           e.preventDefault();
-          e.dataTransfer.dropEffect = "move";
-        });
-
-        card.addEventListener("drop", (e) => {
-          e.preventDefault();
-          const fromIdx = parseInt(e.dataTransfer.getData("text/plain"));
-          const toIdx = parseInt(e.currentTarget.dataset.index);
+          const fromIdx = parseInt(e.dataTransfer.getData("text/plain")), toIdx = parseInt(card.dataset.index);
           if (fromIdx !== toIdx) {
             const moved = sets.splice(fromIdx, 1)[0];
             sets.splice(toIdx, 0, moved);
             renderSets();
           }
         });
-
         container.appendChild(card);
       });
-    }
-    
-    function exportToFile() {
-      if (sets.length === 0) {
-        alert("Nothing to export.");
-        return;
-      }
+    };
+
+    const exportToFile = () => {
+      if (!sets.length) return alert("Nothing to export.");
       const lines = sets.map(s => `${s.name}: ${s.chords.join(" ")}`);
       fetch("/submit", {
         method: "POST",
@@ -251,7 +197,7 @@
         link.click();
       })
       .catch(e => alert(e));
-    }
+    };
 
     roots.forEach(r => document.getElementById("root-buttons").appendChild(makeButton(r, true)));
     types.forEach(t => document.getElementById("type-buttons").appendChild(makeButton(t, false)));
